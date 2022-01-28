@@ -1,1 +1,1 @@
-import runner
+from .runner import main

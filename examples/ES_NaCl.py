@@ -3,16 +3,26 @@ Example script to showcase the functionality of the implemented Ewald summation 
 the electrostatic energy of the sodium cloride unit cell
 """
 # %%
-from os import system
 import SummerOfSixtyNine.ssn as ssn
 # %%
 # specify input parameters
 outval      = 'E'       # calculate energy
 technique   = 'ES'      # use Ewald summation
-crystal     = 'NaCl'    # for sodium chloride unit cell
+
+# instantiate structure class
+
+# specify grid parameters
 
 
-
-
-ssn.main()  
+# initialize grid
+# %%
+# call main function with specified parameters
+ssn.main(outval, technique, crystal)  
+# %%
+import csv
+# %%
+with open('../data/cell_parameters_dataset.csv', newline='') as csvfile:
+    reader = csv.reader(csvfile, delimiter=' ')
+    for row in reader:
+        print(row, '\n')
 # %%

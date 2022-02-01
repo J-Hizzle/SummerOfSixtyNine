@@ -1,1 +1,1 @@
-from .runner import main
+from .main import run_ssn

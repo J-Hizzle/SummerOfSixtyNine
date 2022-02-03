@@ -2,17 +2,17 @@
 import scipy.constants as constants
 import numpy as np
 # %%
-def direct_sum(structure, cutoff):
+def direct_sum(structure, real_cut):
     '''
     Calculates electrostatic energy for a given structure using the direct sum method
-    with cutoff according to
+    with real_cut according to
 
     **Parameters:**
 
     structure : Structure class instance
         Class containing all information about the structure of the given system.
-    cutoff : float
-        Number of spheres to consider in the direct sum around the unit cell.
+    real_cut : float
+        Cutoff radius in real space.
     
     See :ref [1]: H. B. Lee, W. Cai, Ewald Summation for Coulomb Interactions in a Periodic Supercell, 2009.
     '''
@@ -26,9 +26,9 @@ def direct_sum(structure, cutoff):
     r = structure.coordinates
 
     # set repeat vectors
-    n = build_cutoff_spheres(cutoff)
+    n = structure.build_real_cut_spheres(real_cut)
 
-    # set number of particles within cutoff
+    # set number of particles within real_cut
     N = len(q) * len(n)
 
     # initialize electrostatic energy
@@ -49,29 +49,4 @@ def direct_sum(structure, cutoff):
     E *= 1/(4 * pi * eps_0) * 1/2
 
     return E
-
-def build_cutoff_spheres(cutoff, flat=True):
-    '''
-    Initializes nested list of tuples that contains all repeat vectors in each cutoff-sphere for a given cutoff value
-    and flattens it if requested.
-    For now, only implemented for n <= 1.
-    '''
-    cutoff_spheres = []
-
-    if cutoff >= 0:
-        cutoff_spheres.append([[0, 0, 0]])
-
-    if cutoff >= 1:
-        cutoff_spheres.append([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0], [1, 0, 1], [0, 1, 1], [1, 1, 1], \
-                            [-1, 0, 0], [0, -1, 0], [0, 0, -1], [-1, -1, 0], [-1, 0, -1], [0, -1, -1], [-1, -1, -1], \
-                            [-1, 1, 0], [-1, 0, 1], [-1, 1, 1], \
-                            [1, -1, 0], [0, -1, 1], [1, -1, 1], \
-                            [1, 0, -1], [0, 1, -1], [1, 1, -1], \
-                            [-1, -1, 1], [-1, 1, -1], [1, -1, -1]])
-    
-    # flatten the list if requested
-    if flat == True:
-        cutoff_spheres = [np.asarray(rep_vec) for cutoff_sphere in cutoff_spheres for rep_vec in cutoff_sphere]
-
-    return cutoff_spheres
 # %%

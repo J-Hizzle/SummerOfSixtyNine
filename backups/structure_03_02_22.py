@@ -102,15 +102,33 @@ class Structure:
         return lattice_matrix, inv_lat_matrix
 
 
-    def _get_n(self, n_cut):
+    def build_real_cut_spheres(self, real_cut, flat=True):
         '''
-        Initializes list of arrays that contains all repeat vectors for a given n_cut with n = [0, 0, 0] omitted.
+        Initializes list of arrays that contains all repeat vectors for a given cutoff value in real space.
+        Obviously, one would like to limit the number of repeat vectors right from the start, but getting the correct set 
+        is a bit tricky. At first, all repeat vectors for which the sum of the absolute values of the elements is smaller 
+        or equal to the cutoff value are generated. Afterwards, the distances 
+        For now, only implemented for n <= 1.
+        '''
+        cutoff_spheres = []
+
+        if real_cut >= 0:
+            cutoff_spheres.append([[0, 0, 0]])
+
+        if real_cut >= 1:
+            cutoff_spheres.append([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0], [1, 0, 1], [0, 1, 1], [1, 1, 1], \
+                                [-1, 0, 0], [0, -1, 0], [0, 0, -1], [-1, -1, 0], [-1, 0, -1], [0, -1, -1], [-1, -1, -1], \
+                                [-1, 1, 0], [-1, 0, 1], [-1, 1, 1], \
+                                [1, -1, 0], [0, -1, 1], [1, -1, 1], \
+                                [1, 0, -1], [0, 1, -1], [1, 1, -1], \
+                                [-1, -1, 1], [-1, 1, -1], [1, -1, -1]])
         
-        **Parameters:**
-        n_cut : int
-            Number that specifies the highest entry in any dimension that the repeat vectors may have.
-            (Example: n_cut = 2 => n = [[-2, -2, -2], [-1, -2, -2], ..., [-1, -1, -1], ..., [1, 0, 0], ..., [1, 1, 1]])
-        '''
+        # flatten the list and convert to arrays in proper units
+        cutoff_spheres = [self.cell_length * np.asarray(rep_vec, dtype=np.float64) for cutoff_sphere in cutoff_spheres for rep_vec in cutoff_sphere]
+
+        return cutoff_spheres
+
+    def _get_n(n_cut):
         n = []
         for i in np.arange(-n_cut, n_cut):
             for j in np.arange(-n_cut, n_cut):
@@ -119,5 +137,6 @@ class Structure:
                     
                     if np.linalg.norm(n_ijk) != 0:
                         n.append(n_ijk)
+
         return n
 # %%

@@ -8,7 +8,7 @@ import SummerOfSixtyNine.ssn as ssn
 from SummerOfSixtyNine.ssn.structure import Structure
 # %%
 # specify input parameters
-cutoff      = 0         # only consider supercell
+real_cut    = 2.81e-10         # define real space cutoff value
 outval      = 'E'       # calculate energy
 technique   = 'DS'      # use Ewald summation
 
@@ -22,5 +22,6 @@ cell_parameters     = [5.64e-10, 4]
 # instantiate struc class
 struc = Structure(formula, atomic_numbers, oxidation_states, crystal_type, cell_parameters)
 # %%
-energy = ssn.run_ssn(struc, cutoff, technique, outval)
+energy = ssn.run_ssn(struc, real_cut, technique, outval)
 # %%
+

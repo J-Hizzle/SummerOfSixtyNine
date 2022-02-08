@@ -24,12 +24,13 @@ def direct_sum(structure, real_cut):
     L = structure.cell_length
     q = structure.charges
     r = structure.coordinates
-
+    
     # set repeat vectors
-    n = structure.build_real_cut_spheres(real_cut)
+    n_cut = int(np.rint(real_cut/L + 1))
+    n = structure.get_n(n_cut)
 
     # set number of particles within real_cut
-    N = len(q) * len(n)
+    N = len(q)
 
     # initialize electrostatic energy
     E = 0
@@ -40,10 +41,9 @@ def direct_sum(structure, real_cut):
             for j in range(N):
                 if i != j:
                     r_ij = r[j] - r[i]
-                    nL = n_i * L
-                    #print('r_ij({0},{1}) ='.format(i, j), r_ij)
-                    #print('nL({0},{1}) ='.format(i, j), nL)
-                    E += q[i] * q[j] / (np.linalg.norm(r_ij + nL))
+                    if np.linalg.norm(r_ij) <= real_cut:
+                        nL = n_i * L
+                        E += q[i] * q[j] / (np.linalg.norm(r_ij + nL))
 
     # account for double counting and multiply with constants
     E *= 1/(4 * pi * eps_0) * 1/2

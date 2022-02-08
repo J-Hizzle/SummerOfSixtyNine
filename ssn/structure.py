@@ -58,7 +58,7 @@ class Structure:
         self.species = re.sub( r"([A-Z])", r" \1", self.formula).split()
 
         # get coordinates from build_unit_cell function
-        self.particles, self.nuclei, self.charges, self.coordinates = self.build_unit_cell()
+        self.particles, self.nuclei, self.charges, self.coordinates = self._build_unit_cell()
             
     def _build_unit_cell(self):
         '''
@@ -102,7 +102,7 @@ class Structure:
         return lattice_matrix, inv_lat_matrix
 
 
-    def _get_n(self, n_cut):
+    def get_n(self, n_cut):
         '''
         Initializes list of arrays that contains all repeat vectors for a given n_cut with n = [0, 0, 0] omitted.
         

@@ -37,11 +37,15 @@ def direct_sum(structure, real_cut):
     E = 0.0
     
     # add direct summands succeedingly
-    for i in range(N):
-        charges_in_cut, coords_in_cut, dist_in_cut = structure.get_particles_in_cut(r[i], real_cut)
-        for j in len(coords_in_cut):
-            E += q[i] * charges_in_cut[j] / (dist_in_cut[j])
-    
+    for n_i in n:
+        for i in range(N):
+            for j in range(N):
+                if i != j:
+                    r_ij = r[j] - r[i]
+                    if np.linalg.norm(r_ij) <= real_cut:
+                        nL = n_i * L
+                        E += q[i] * q[j] / (np.linalg.norm(r_ij + nL))
+
     # account for double counting and multiply with constants
     E *= e**2/(4 * pi * eps_0) * 1/2
 

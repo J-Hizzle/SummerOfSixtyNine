@@ -53,16 +53,23 @@ def ewald_real(structure, sigma, real_cut):
     # initialize real space energy
     E_real = 0.0
     
-    for i in range(N):
-        # calculate particles within cutoff radius
-        charges_in_cut, coords_in_cut, dist_in_cut = structure.get_particles_in_cut(r[i], real_cut)
-        
-        # calculate self-energy term
-        E_real -= 1/(np.sqrt(2 * pi) * sigma) * q[i]**2
+    # loop over particles and calculate particles within cutoff sphere on the go
+    for n_i in n:
+        for i in range(N):
+            for j in range(N):
+                r_ij = r[j] - r[i]
+                d = np.linalg.norm(r_ij + nL)
+                # calculate self-energy
+                if d == 0.0:
+                    E_real += 1/(np.sqrt(2 * pi) * sigma) * q[i]**2
 
-        for j in len(coords_in_cut):
-            E_real += q[i] * charges_in_cut[j] / (dist_in_cut[j])
-                            
+                # calculate short-range terms
+                if i != j:
+                    if d <= real_cut:
+                        nL = n_i * L
+                        
+                        E_real += q[i] * q[j] / d * erfc(d/(np.sqrt(2) * sigma))
+
     # account for double counting and multiply with constants
     E_real *= e**2/(4 * pi * epsilon_0) * 1/2
 

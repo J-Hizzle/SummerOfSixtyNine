@@ -118,6 +118,40 @@ class Structure:
                     n_ijk = np.array([i, j, k])
                     
                     if np.linalg.norm(n_ijk) != 0:
-                        n.append(n_ijk)
+                        n.append(n_ijk)        
         return n
+
+    def get_particles_in_cut(self, r_i, r_cut):
+        '''
+        Returns list of charges, list of coordinate-arrays and list of distances of particles that lie within a distance r_cut to 
+        a given particle at position r_i. 
+
+        **Parameters:**
+
+        r_i : np.ndarray, dtype = float64, shape = (3,)
+            Position of a given particle.
+        r_cut : float
+            Cutoff radius to which particles will be considered.
+        '''
+        # set repeat vectors
+        n_cut = int(np.rint(r_cut/self.cell_length + 1))
+        n = self.get_n(n_cut)
+        
+        # initialize lists
+        coords_in_cut = []
+        charges_in_cut = []
+        dist_in_cut = []
+
+        # loop over all particles in all periodic images that may lie within cutoff radius
+        for n_i in n:
+            for j in len(self.coordinates):
+                r_j = self.coordinates[j] + n_i
+                r_ij = r_j - r_i
+                d_ij = np.linalg.norm(r_ij)
+                if d_ij > 0.0 and d_ij <= r_cut:
+                    charges_in_cut.append(self.charges[j])
+                    coords_in_cut.append(r_j)
+                    dist_in_cut.append(d_ij)
+        
+        return charges_in_cut, coords_in_cut, dist_in_cut
 # %%

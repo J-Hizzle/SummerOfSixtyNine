@@ -1,9 +1,8 @@
 from scipy.constants import epsilon_0, pi, e
 from scipy.special import erfc
 import numpy as np
-from math import exp, cos, sin
 
-def ewald_sum(structure, sigma, real_cut, rec_cut):
+def ewald_sum(structure, sigma, n_cut, k_cut):
     '''
     Calculates electrostatic energy for a given structure using the ewald summation technique
     according to ref [1]
@@ -14,95 +13,97 @@ def ewald_sum(structure, sigma, real_cut, rec_cut):
         Object containing all information about the structure of the given system.
     sigma : float
         Gaussian standard deviation. 
-    real_cut : float
-        Cutoff radius in real space.
-    rec_cut : float
-        Cutoff for distance in reciprocal space.
+    n_cut : float
+        Cubic cutoff shell in real space.
+    k_cut : float
+        Cubic cutoff shell in reciprocal space.
     
     See :ref [1]: Notes on Ewald summation techniques (docs).
+        :ref [2]: Report on Ewald summation (docs).
     '''
     # set summation parameters
-    q = structure.charges
     r = structure.coordinates
-    
-    # set number of particles in unit cell
-    N = len(q)
+    q = structure.charges
+    N = structure.N_part
+    L = structure.cell_length
+    V = structure.volume
 
-    # get repeat vectors in real space T
-    T_vectors, G_vectors = structure.get_T_G(real_cut, rec_cut)
+    # get real and reciprocal space repeat vectors
+    n = structure.get_rep(n_cut)
+    k = structure.get_rep(k_cut)
 
-    # initialize total electrostatic energy 
+    # initialize total energy
     E_tot = 0.0
 
-    # loop over particles in unit cell
+    # loop over particles
     for i in range(N):
         for j in range(N):
-            # calculate self-energy term 
-            E_self = ewald_self(sigma, i, j)
+            # calculate different contributions to energy
+            E_long = ewald_long(r[i], r[j], k, L, V, sigma)
+            E_short = ewald_short(r[i], r[j], n, L, sigma)
+            E_self = ewald_self(i, j, sigma)
 
-            # calculate short-range term in real space
-            E_short = ewald_short(structure, sigma, T_vectors, i, j)
-            
-            # calculate long-range term in reciprocal space
-            E_long = ewald_long(structure, sigma, G_vectors, i, j)
-            
-            # add sum over the contributions to total energy
-            E_tot += E_long + E_short - E_self
+            # sum over all individual contributions and multiply with product of charges
+            E_tot += q[i] * q[j] * (E_long + E_short + E_self)
 
     # calculate units and compensate for double-counting
-    E_tot *= e**2/(4 * pi * epsilon_0) * 1/2
+    E_tot *= e**2/(8 * pi * epsilon_0)
 
     return E_tot
 
-def ewald_self(sigma, i, j):
+def ewald_long(r_i, r_j, k, L, V, sigma):
     '''
-    Returns self-energy of i-th and j-th particle
+    Calculates long-range interaction energy in reciprocal space.
     '''
-    if i == j:
-        E_self = 1/np.sqrt(sigma * pi)
-    else:
-        E_self = 0.0
-    
-    return E_self
+    # initialize E_long
+    E_long = 0.0 
 
-def ewald_short(structure, sigma, T_vectors, i, j):
-    '''
-    Calculates real space contribution to electrostatic energy, consisting of the short-range part 
-    and the self-energy term.
-    '''
-    # set summation parameters
-    r = structure.coordinates
-    
-    # initialize real space energy
-    E_short = 0.0
-    
-    for T_i in T_vectors:
-        # calculate only if it's not the same particle
-        if not (np.linalg.norm(T_i) == 0 and i == j):
-            d_ij = np.linalg.norm(r[j] - r[i] + T_i)
-            E_short += erfc(1/(2 * np.sqrt(sigma)) * d_ij)/d_ij
-            
-    return E_short
+    # loop over k-vectors
+    for k_i in k:
+        # calculate correct dimension of k
+        k_dim = 2 * pi/L * k_i
 
-def ewald_long(structure, sigma, G_vectors, i, j):
-    '''
-    Calculates reciprocal space contribution to the electrostatic energy.
-    '''
-    # set summation parameters
-    r = structure.coordinates
-    V = structure.volume
+        # calculate absolute value of k
+        k_abs = np.linalg.norm(k_dim)
+
+        # omitt k = 0 vector 
+        if not (k_abs == 0.0):
+            # add energy term to long-range energy
+            E_long += np.cos(np.dot(k_dim, (r_j - r_i))) * np.exp(-sigma**2 * k_abs**2/2)/k_abs**2
     
-    # initialize reciprocal space energy
-    E_long = 0.0
-
-    for G_i in G_vectors:
-        # omit k = 0
-        if not (np.linalg.norm(G_i) == 0):
-            r_ij = r[j] - r[i]
-            k_abs = np.linalg.norm(G_i)
-            E_long += complex(cos(G_i * r_ij), sin(G_i * r_ij)) * exp(-k_abs**2 * sigma)/k_abs**2
-
-    # include prefactor
+    # account for prefactor
     E_long *= 4 * pi/V
 
     return E_long
+
+def ewald_short(r_i, r_j, n, L, sigma):
+    '''
+    Calculates short-range interaction energy in real space.
+    '''
+    # initialize E_short
+    E_short = 0.0
+
+    # loop over n-vectors
+    for n_i in n:
+        # calculate correct dimensions of n
+        nL = n_i * L
+
+        # calculate absolute distance between particles
+        d_ij = np.linalg.norm(r_j - r_i + nL)
+
+        # omitt self-interaction
+        if not (d_ij == 0.0):
+            E_short += erfc(d_ij/(np.sqrt(2) * sigma))/d_ij
+    
+    return E_short
+
+def ewald_self(i, j, sigma):
+    '''
+    Calculates self-energy term.
+    '''
+    if i == j:
+        E_self = np.sqrt(2/pi)/sigma
+    else:
+        E_self = 0.0
+
+    return E_self

@@ -6,7 +6,7 @@ from SummerOfSixtyNine.ssn.summation.direct import direct_sum
 from SummerOfSixtyNine.ssn.summation.ewald import ewald_sum
 # %%
 
-def run_ssn(struc, cutoff, n_cut, k_cut, sigma, technique, outval):
+def run_ssn(struc, n_cut, k_cut, sigma, technique, outval):
     '''
     Main function of the SSN package that calls lower-level functions.
 
@@ -23,11 +23,9 @@ def run_ssn(struc, cutoff, n_cut, k_cut, sigma, technique, outval):
     # 1) input
     # first step make python script interface, maybe later with command line, but dunno
     # instantiate struc class
+    # for now solved within example scripts
 
-    # 2) calculation
-    # implement these in lower-level modules within ssn directory
-    
-    # if technique='ES', instantiate Ewald summation class
+    # 2) calculation    
     if technique == 'ES':
         E = ewald_sum(struc, sigma, n_cut, k_cut)
 
@@ -35,6 +33,7 @@ def run_ssn(struc, cutoff, n_cut, k_cut, sigma, technique, outval):
         E = direct_sum(struc, cutoff)
 
     # 3) output
-    # for now, put out results as return value
     if outval == 'E':
-        return E
+        output = E
+
+    return output

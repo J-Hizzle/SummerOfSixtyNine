@@ -60,7 +60,8 @@ class Structure:
         # get coordinates from build_unit_cell function
         self.particles, self.nuclei, \
             self.charges, self.coordinates, \
-                self.N_part, self.volume \
+                self.N_part, self.volume, \
+                    self.T_vectors, self.G_vectors \
                         = self._build_unit_cell()
             
     def _build_unit_cell(self):
@@ -69,11 +70,11 @@ class Structure:
         For now, only implemented for NaCl type crystals.
         '''
         if self.crystal_type == 'NaCl':
-            particles, nuclei, charges, coordinates, N_part, volume = self._build_NaCl() 
+            particles, nuclei, charges, coordinates, N_part, volume, T_vectors, G_vectors = self._build_NaCl() 
         
         else: print('Cell types other than NaCl not yet implemented')
 
-        return particles, nuclei, charges, coordinates, N_part, volume
+        return particles, nuclei, charges, coordinates, N_part, volume, T_vectors, G_vectors
 
     def _build_NaCl(self):
         '''
@@ -108,25 +109,118 @@ class Structure:
         # determine number of particles in the unit cell
         N_part = len(coordinates)
 
+        # set up unit vectors to construct translation and reciprocal vectors
+        x_vec = np.array([1, 0, 0])
+        y_vec = np.array([0, 1, 0])
+        z_vec = np.array([0, 0, 1])
+
+        # set up translation vector matrix
+        T_vectors = np.zeros((3, 3))
+        
+        # get individual components from ref [1]
+        T_1 = 1/2 * (x_vec + y_vec)
+        T_2 = 1/2 * (y_vec + z_vec)
+        T_3 = 1/2 * (z_vec + x_vec)
+        T_vectors[0, :] = T_1[:]
+        T_vectors[1, :] = T_2[:]
+        T_vectors[2, :] = T_3[:]
+
+        # set up reciprocal vector matrix
+        G_vectors = np.zeros((3, 3))
+
+        # get individual components from ref [1]
+        G_1 = 2 * np.pi * (x_vec + y_vec - z_vec)
+        G_2 = 2 * np.pi * (-x_vec + y_vec + z_vec)
+        G_3 = 2 * np.pi * (x_vec - y_vec + z_vec)
+        G_vectors[0, :] = G_1[:]
+        G_vectors[1, :] = G_2[:]
+        G_vectors[2, :] = G_3[:]
+
         # determine unit cell volume
-        volume = self.cell_length**3
+        volume = np.dot(T_1, np.cross(T_2, T_3))
 
-        return particles, nuclei, charges, coordinates, N_part, volume
+        return particles, nuclei, charges, coordinates, N_part, volume, T_vectors, G_vectors
 
-    def get_rep(self, cutoff):
+    def _build_cubic_lattice(self):
         '''
-        Initializes list of arrays that contains all repeat vectors for a given cutoff value.
+        Construct cubic periodic lattice from given cell parameter a. Each row is a lattice vector
+        (a x a x a)
+        '''
+        lattice_matrix = np.eye(3, 3, dtype=np.float64) * self.cell_length
+
+        inv_lat_matrix = np.linalg.inv(lattice_matrix)
+
+        return lattice_matrix, inv_lat_matrix
+
+    def get_particles_in_cut(self, r_i, r_cut):
+        '''
+        Returns list of charges, list of coordinate-arrays and list of distances of particles that lie within a distance r_cut to 
+        a given particle at position r_i. 
+
+        **Parameters:**
+
+        r_i : np.ndarray, dtype = float64, shape = (3,)
+            Position of a given particle.
+        r_cut : float
+            Cutoff radius to which particles will be considered.
+        '''
+        # set repeat vectors
+        n_cut = int(np.rint(r_cut/self.cell_length + 1))
+        n = self.get_n(n_cut)
+        print(self.N_part)
+        
+        # initialize lists
+        coords_in_cut = []
+        charges_in_cut = []
+        dist_in_cut = []
+
+        # loop over all particles in all periodic images that may lie within cutoff radius
+        for n_i in n:
+            for j in range(self.N_part):
+                r_j = self.coordinates[j] + n_i * self.cell_length
+                r_ij = r_j - r_i
+                d_ij = np.linalg.norm(r_ij)
+                if d_ij > 0.0 and d_ij <= r_cut:
+                    charges_in_cut.append(self.charges[j])
+                    coords_in_cut.append(r_j)
+                    dist_in_cut.append(d_ij)
+        
+        return charges_in_cut, coords_in_cut, dist_in_cut
+
+    def get_n(self, n_cut):
+        '''
+        Initializes list of arrays that contains all repeat vectors for a given n_cut.
         
         **Parameters:**
-        cutoff : int
+        n_cut : int
             Number that specifies the highest entry in any dimension that the repeat vectors may have.
             (Example: n_cut = 2 => n = [[-2, -2, -2], [-1, -2, -2], ..., [-1, -1, -1], ..., [0, 0, 0], [1, 0, 0], ..., [1, 1, 1]])
         '''
         n = []
-        for i in np.arange(-cutoff, cutoff + 1):
-            for j in np.arange(-cutoff, cutoff + 1):
-                for k in np.arange(-cutoff, cutoff + 1):
+        for i in np.arange(-n_cut, n_cut + 1):
+            for j in np.arange(-n_cut, n_cut + 1):
+                for k in np.arange(-n_cut, n_cut + 1):
                     n_ijk = np.array([i, j, k])   
                     n.append(n_ijk)        
         return n
+
+    def get_k(self, k_cut):
+        '''
+        Initializes list of arrays that contains all repeat vectors in reciprocal space for a given k_cut with k = [0, 0, 0] omitted.
+        
+        **Parameters:**
+        k_cut : int
+            Number that specifies the highest entry in any dimension that the repeat vectors may have.
+            (Example: k_cut = 2 => n = [[-2, -2, -2], [-1, -2, -2], ..., [-1, -1, -1], ..., [1, 0, 0], ..., [1, 1, 1]])
+        '''
+        n = []
+        for i in np.arange(-k_cut, k_cut + 1):
+            for j in np.arange(-k_cut, k_cut + 1):
+                for l in np.arange(-k_cut, k_cut + 1):
+                    k_ijl = np.array([i, j, l])
+                    
+                    if np.linalg.norm(k_ijl) != 0:
+                        n.append(k_ijl)        
+        return n
+
 # %%

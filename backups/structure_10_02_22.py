@@ -61,7 +61,7 @@ class Structure:
         self.particles, self.nuclei, \
             self.charges, self.coordinates, \
                 self.N_part, self.volume, \
-                    self.T_vectors, self.G_vectors \
+                    self.T_matrix, self.G_matrix \
                         = self._build_unit_cell()
             
     def _build_unit_cell(self):
@@ -70,11 +70,11 @@ class Structure:
         For now, only implemented for NaCl type crystals.
         '''
         if self.crystal_type == 'NaCl':
-            particles, nuclei, charges, coordinates, N_part, volume, T_vectors, G_vectors = self._build_NaCl() 
+            particles, nuclei, charges, coordinates, N_part, volume, T_matrix, G_matrix = self._build_NaCl() 
         
         else: print('Cell types other than NaCl not yet implemented')
 
-        return particles, nuclei, charges, coordinates, N_part, volume, T_vectors, G_vectors
+        return particles, nuclei, charges, coordinates, N_part, volume, T_matrix, G_matrix
 
     def _build_NaCl(self):
         '''
@@ -115,31 +115,31 @@ class Structure:
         z_vec = np.array([0, 0, 1])
 
         # set up translation vector matrix
-        T_vectors = np.zeros((3, 3))
+        T_matrix = np.zeros((3, 3))
         
         # get individual components from ref [1]
         T_1 = 1/2 * (x_vec + y_vec)
         T_2 = 1/2 * (y_vec + z_vec)
         T_3 = 1/2 * (z_vec + x_vec)
-        T_vectors[0, :] = T_1[:]
-        T_vectors[1, :] = T_2[:]
-        T_vectors[2, :] = T_3[:]
+        T_matrix[0, :] = T_1[:]
+        T_matrix[1, :] = T_2[:]
+        T_matrix[2, :] = T_3[:]
 
         # set up reciprocal vector matrix
-        G_vectors = np.zeros((3, 3))
+        G_matrix = np.zeros((3, 3))
 
         # get individual components from ref [1]
         G_1 = 2 * np.pi * (x_vec + y_vec - z_vec)
         G_2 = 2 * np.pi * (-x_vec + y_vec + z_vec)
         G_3 = 2 * np.pi * (x_vec - y_vec + z_vec)
-        G_vectors[0, :] = G_1[:]
-        G_vectors[1, :] = G_2[:]
-        G_vectors[2, :] = G_3[:]
+        G_matrix[0, :] = G_1[:]
+        G_matrix[1, :] = G_2[:]
+        G_matrix[2, :] = G_3[:]
 
         # determine unit cell volume
         volume = np.dot(T_1, np.cross(T_2, T_3))
 
-        return particles, nuclei, charges, coordinates, N_part, volume, T_vectors, G_vectors
+        return particles, nuclei, charges, coordinates, N_part, volume, T_matrix, G_matrix
 
     def _build_cubic_lattice(self):
         '''
@@ -187,7 +187,35 @@ class Structure:
         
         return charges_in_cut, coords_in_cut, dist_in_cut
 
-    def get_n(self, n_cut):
+    def get_T_G(self, n_cut, k_cut):
+        '''
+        Returns lists of translation and reciprocal repeat vector arrays for the given r_cut
+        and k_cut values
+        '''
+        # get translation vector factors 
+        n = self.get_n
+
+        # initialize T_vectors list
+        T_vectors = []
+
+        # calculate T_vectors and append them to the list
+        for n_i in n:
+            T_vectors.append(n_i[0] * self.T_matrix[0] + n_i[1] * self.T_matrix[1] + n_i[2] * self.T_matrix[2])
+
+        # get reciprocal repeat vector factors 
+        k = self.get_k
+
+        # initialize G_vectors list
+        G_vectors = []
+
+        # calculate G_vectors and append them to the list
+        for k_i in k:
+            G_vectors.append(k_i[0] * self.G_matrix[0] + k_i[1] * self.G_matrix[1] + k_i[2] * self.G_matrix[2])
+
+        return T_vectors, G_vectors
+
+
+    def _get_n(self, n_cut):
         '''
         Initializes list of arrays that contains all repeat vectors for a given n_cut.
         
@@ -204,7 +232,7 @@ class Structure:
                     n.append(n_ijk)        
         return n
 
-    def get_k(self, k_cut):
+    def _get_k(self, k_cut):
         '''
         Initializes list of arrays that contains all repeat vectors in reciprocal space for a given k_cut with k = [0, 0, 0] omitted.
         

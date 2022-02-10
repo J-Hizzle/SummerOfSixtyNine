@@ -4,25 +4,27 @@ the electrostatic energy of the sodium cloride unit cell
 """
 # %%
 import SummerOfSixtyNine.ssn as ssn
+from SummerOfSixtyNine.ssn.structure import Structure
 # %%
 # specify input parameters
+real_cut    = 1       # arbitrary for ES
 outval      = 'E'       # calculate energy
-technique   = 'ES'      # use Ewald summation
+technique   = 'DS'      # use direct sum method
+sigma       = 1         # define Gaussian parameter
+n_cut       = 1
+k_cut       = 1
 
-# instantiate structure class
 
-# specify grid parameters
+# specify struc parameters formula, oxidation_states, crystal_type, cell_parameters
+formula             = 'NaCl'
+atomic_numbers      = [11, 17]
+oxidation_states    = [1, -1]
+crystal_type        = 'NaCl'
+cell_parameters     = [5.64e-10, 4]
 
-
-# initialize grid
+# instantiate struc class
+struc = Structure(formula, atomic_numbers, oxidation_states, crystal_type, cell_parameters)
 # %%
-# call main function with specified parameters
-ssn.main(outval, technique, crystal)  
-# %%
-import csv
-# %%
-with open('../data/cell_parameters_dataset.csv', newline='') as csvfile:
-    reader = csv.reader(csvfile, delimiter=' ')
-    for row in reader:
-        print(row, '\n')
+E_real = ewald_real(struc, sigma, real_cut)
+print(E_real)
 # %%

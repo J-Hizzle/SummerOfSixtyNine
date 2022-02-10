@@ -3,9 +3,10 @@ Main module of the SSN package that manages the user input and calls lower-level
 '''
 # %%
 from SummerOfSixtyNine.ssn.summation.direct import direct_sum
+from SummerOfSixtyNine.ssn.summation.ewald import ewald_sum
 # %%
 
-def run_ssn(struc, cutoff, technique, outval):
+def run_ssn(struc, cutoff, n_cut, k_cut, sigma, technique, outval):
     '''
     Main function of the SSN package that calls lower-level functions.
 
@@ -28,7 +29,7 @@ def run_ssn(struc, cutoff, technique, outval):
     
     # if technique='ES', instantiate Ewald summation class
     if technique == 'ES':
-        print("ES not yet implemented")
+        E = ewald_sum(struc, sigma, n_cut, k_cut)
 
     if technique == 'DS':
         E = direct_sum(struc, cutoff)

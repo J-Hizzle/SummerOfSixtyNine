@@ -1,13 +1,12 @@
 from scipy.constants import epsilon_0, pi, e
-from scipy.special import erf, erfc
+from scipy.special import erfc
 import numpy as np
+from math import exp, cos, sin
 
-from SummerOfSixtyNine.ssn.pratt import E_real
-
-def ewald(structure, sigma, real_cut, rec_cut):
+def ewald_sum(structure, sigma, real_cut, rec_cut):
     '''
-    Calculates electrostatic energy for a given structure using the direct sum method
-    with real_cut according to
+    Calculates electrostatic energy for a given structure using the ewald summation technique
+    according to ref [1]
 
     **Parameters:**
 
@@ -20,55 +19,90 @@ def ewald(structure, sigma, real_cut, rec_cut):
     rec_cut : float
         Cutoff for distance in reciprocal space.
     
-    See :ref [1]: H. B. Lee, W. Cai, Ewald Summation for Coulomb Interactions in a Periodic Supercell, 2009.
+    See :ref [1]: Notes on Ewald summation techniques (docs).
     '''
-    # calculate real space contribution to electrostatic energy
-    E_real = ewald_real(structure, sigma, real_cut)
+    # set summation parameters
+    q = structure.charges
+    r = structure.coordinates
+    
+    # set number of particles in unit cell
+    N = len(q)
 
-    # calculate reciprocal space contribution to electrostatic energy 
-    E_rec = ewald_rec(structure, sigma, rec_cut)
+    # get repeat vectors in real space T
+    T_vectors, G_vectors = structure.get_T_G(real_cut, rec_cut)
 
-    # calculate total electrostatic energy
-    E = E_real + E_rec
+    # initialize total electrostatic energy 
+    E_tot = 0.0
 
-    return E
+    # loop over particles in unit cell
+    for i in range(N):
+        for j in range(N):
+            # calculate self-energy term 
+            E_self = ewald_self(sigma, i, j)
 
-def ewald_real(structure, sigma, real_cut):
+            # calculate short-range term in real space
+            E_short = ewald_short(structure, sigma, T_vectors, i, j)
+            
+            # calculate long-range term in reciprocal space
+            E_long = ewald_long(structure, sigma, G_vectors, i, j)
+            
+            # add sum over the contributions to total energy
+            E_tot += E_long + E_short - E_self
+
+    # calculate units and compensate for double-counting
+    E_tot *= e**2/(4 * pi * epsilon_0) * 1/2
+
+    return E_tot
+
+def ewald_self(sigma, i, j):
+    '''
+    Returns self-energy of i-th and j-th particle
+    '''
+    if i == j:
+        E_self = 1/np.sqrt(sigma * pi)
+    else:
+        E_self = 0.0
+    
+    return E_self
+
+def ewald_short(structure, sigma, T_vectors, i, j):
     '''
     Calculates real space contribution to electrostatic energy, consisting of the short-range part 
     and the self-energy term.
     '''
     # set summation parameters
-    L = structure.cell_length
-    q = structure.charges
     r = structure.coordinates
     
-    # set repeat vectors
-    n_cut = int(np.rint(real_cut/L + 1))
-    n = structure.get_n(n_cut)
-
-    # set number of particles in unit cell
-    N = len(q)
-
     # initialize real space energy
-    E_real = 0.0
+    E_short = 0.0
     
-    for i in range(N):
-        # calculate particles within cutoff radius
-        charges_in_cut, coords_in_cut, dist_in_cut = structure.get_particles_in_cut(r[i], real_cut)
-        
-        # calculate self-energy term
-        E_real -= 1/(np.sqrt(2 * pi) * sigma) * q[i]**2
+    for T_i in T_vectors:
+        # calculate only if it's not the same particle
+        if not (np.linalg.norm(T_i) == 0 and i == j):
+            d_ij = np.linalg.norm(r[j] - r[i] + T_i)
+            E_short += erfc(1/(2 * np.sqrt(sigma)) * d_ij)/d_ij
+            
+    return E_short
 
-        for j in len(coords_in_cut):
-            E_real += q[i] * charges_in_cut[j] / (dist_in_cut[j])
-                            
-    # account for double counting and multiply with constants
-    E_real *= e**2/(4 * pi * epsilon_0) * 1/2
-
-    return E_real
-
-def ewald_rec(structure, sigma, rec_cut):
+def ewald_long(structure, sigma, G_vectors, i, j):
     '''
     Calculates reciprocal space contribution to the electrostatic energy.
     '''
+    # set summation parameters
+    r = structure.coordinates
+    V = structure.volume
+    
+    # initialize reciprocal space energy
+    E_long = 0.0
+
+    for G_i in G_vectors:
+        # omit k = 0
+        if not (np.linalg.norm(G_i) == 0):
+            r_ij = r[j] - r[i]
+            k_abs = np.linalg.norm(G_i)
+            E_long += complex(cos(G_i * r_ij), sin(G_i * r_ij)) * exp(-k_abs**2 * sigma)/k_abs**2
+
+    # include prefactor
+    E_long *= 4 * pi/V
+
+    return E_long

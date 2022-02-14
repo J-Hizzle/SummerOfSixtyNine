@@ -35,6 +35,9 @@ def ewald_sum(structure, sigma, n_cut, k_cut):
     # initialize total energy
     E_tot = 0.0
 
+    # debugging
+    E_long_tot = 0.0
+
     # loop over particles
     for i in range(N):
         for j in range(N):
@@ -45,9 +48,12 @@ def ewald_sum(structure, sigma, n_cut, k_cut):
 
             # sum over all individual contributions and multiply with product of charges
             E_tot += q[i] * q[j] * (E_long + E_short + E_self)
+            E_long_tot += E_long
 
     # calculate units and compensate for double-counting
     E_tot *= e**2/(8 * pi * epsilon_0)
+
+    print('E_long_tot =', E_long_tot)
 
     return E_tot
 
@@ -70,9 +76,15 @@ def ewald_long(r_i, r_j, k, L, V, sigma):
         if not (k_abs == 0.0):
             # add energy term to long-range energy
             E_long += np.cos(np.dot(k_dim, (r_j - r_i))) * np.exp(-sigma**2 * k_abs**2/2)/k_abs**2
-    
+            #print('E_long({0}) ='.format(k_i), E_long)
+            #print('cos_term({0}) ='.format(k_i), np.cos(np.dot(k_dim, (r_j - r_i))))
+            #print('factor_term({0}) ='.format(k_i), np.exp(-sigma**2 * k_abs**2/2)/k_abs**2)
+            #print('exponent({0}) ='.format(k_i), -sigma**2 * k_abs**2/2)
+
     # account for prefactor
     E_long *= 4 * pi/V
+
+    #print('E_long =', E_long)
 
     return E_long
 
@@ -95,6 +107,8 @@ def ewald_short(r_i, r_j, n, L, sigma):
         if not (d_ij == 0.0):
             E_short += erfc(d_ij/(np.sqrt(2) * sigma))/d_ij
     
+    #print('E_short =', E_short)
+    
     return E_short
 
 def ewald_self(i, j, sigma):
@@ -105,5 +119,7 @@ def ewald_self(i, j, sigma):
         E_self = np.sqrt(2/pi)/sigma
     else:
         E_self = 0.0
+
+    #print('E_self =', E_self)
 
     return E_self

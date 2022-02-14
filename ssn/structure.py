@@ -20,8 +20,14 @@ class Structure:
         Characteristic length of the unit_cell.
     ions_per_cell : int
         Number of the ions of one species in the unit cell.
+    crystal_type : string
+        Type of the crystal system
+    N_part : int
+        Number of particles in the unit cell.
     particles : list, dtype = string, shape = (N_particles,)
-        List of particle names in the unit_cell.
+        List of particle names in the unit cell.
+    volume : float
+        Unit cell volume.
     nuclei : list, dtype = int, shape = (N_particles,)
         List of nuclear charges of the particles.
     charges : list, dtype = int, shape = (N_particles,)
@@ -37,15 +43,12 @@ class Structure:
         **Parameters:**
 
         formula :           See above.
-        oxidation_states :  See above.
         atomic_numbers :    See above.
+        oxidation_states :  See above.
         crystal_type : string, options = ['NaCl']
             Structure of the unit cell, necessary to specify the Bravais-lattice and coordinates.
         cell_parameters : list, dtype = (float, int), shape = (2,)
-            First entry is the length of the unit cell L, second entry is coordination number Z.
-        atom_positions : list, dtype = tuple, shape = (N_species)
-            List of tuples where each tuple contains the position of the respective species in the unit cell.
-        '''
+            First entry is the length of the unit cell L, second entry is coordination number Z.        '''
         # initialize parameters directly from the input
         self.formula = formula
         self.oxidation_states = oxidation_states

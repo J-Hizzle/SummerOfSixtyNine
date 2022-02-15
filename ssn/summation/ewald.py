@@ -47,7 +47,7 @@ def ewald_sum(structure, sigma, n_cut, k_cut):
             E_self = ewald_self(i, j, sigma)
 
             # sum over all individual contributions and multiply with product of charges
-            E_tot += q[i] * q[j] * (E_long + E_short + E_self)
+            E_tot += q[i] * q[j] * (E_long + E_short - E_self)
             E_long_tot += E_long
 
     # calculate units and compensate for double-counting

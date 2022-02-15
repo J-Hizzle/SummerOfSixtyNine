@@ -72,5 +72,5 @@ plt.xlabel(r'$k_{cut}$')
 
 fig.suptitle(r'Ewald sum results ($\sigma = 5 \cdot 10^{-11}$, $n_{cut} = 5$)', fontsize=20, fontweight='bold')
 
-fig.savefig(fname='../data/ewald_sum_results_k_n{0}_s511'.format(n_cut, sigma), dpi=900)
+fig.savefig(fname='../data/ewald_sum_results_k_n{0}_s511.pdf'.format(n_cut, sigma), dpi=900)
 # %%

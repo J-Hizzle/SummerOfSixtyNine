@@ -57,5 +57,5 @@ plt.xlabel(r'$n_{cut}$')
 
 fig.suptitle(r'Direct sum results', fontsize=20, fontweight='bold')
 
-fig.savefig(fname='../data/direct_sum_results', dpi=900)
+fig.savefig(fname='../data/direct_sum_results.pdf', dpi=900)
 # %%

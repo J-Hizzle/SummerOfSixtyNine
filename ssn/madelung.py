@@ -11,9 +11,11 @@ def madelung_constant(structure, E):
     '''
     # set parameters for formulas
     L = structure.cell_length
+    d = structure.min_dist
+    Z = structure.ions_per_cell
     k = 1/(4 * pi * epsilon_0)
 
     # calculate Madelung constant
-    M = E * L/(e**2 * k * 8)
+    M = E * L * d/(e**2 * k * Z)
 
     return M

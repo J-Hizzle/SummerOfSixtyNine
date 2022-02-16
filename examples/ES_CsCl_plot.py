@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 from scipy.constants import N_A
 # %%
-csvfile = '../data/ewald_sum_results.csv'
+csvfile = '../data/ewald_sum_CsCl_results.csv'
 
 frame = pd.read_csv(csvfile, delimiter=',')
 
@@ -15,7 +15,7 @@ array = frame.to_numpy()
 
 # get indices for respective sigma and n_cut values
 n_cut = 2
-sigma = 5e-11
+sigma = 1e-10
 
 n_cut_indices = array[:, 0] == n_cut
 sigma_indices = array[:, 2] == sigma
@@ -70,7 +70,7 @@ plt.ylabel(r'$m$ in $\mathrm{MiB}$')
 plt.title(r'Memory usage')
 plt.xlabel(r'$k_{cut}$')
 
-fig.suptitle(r'Ewald sum results ($\sigma = 5 \cdot 10^{-11}$, $n_{cut} = 2$)', fontsize=20, fontweight='bold')
+fig.suptitle(r'Ewald sum results for CsCl ($\sigma = 5 \cdot 10^{-11}$, $n_{cut} = 2$)', fontsize=20, fontweight='bold')
 
-fig.savefig(fname='../data/ewald_sum_results_k_n{0}_s511.png'.format(n_cut, sigma), dpi=900)
+fig.savefig(fname='../data/ewald_sum_results_CsCl_k_n{0}_s511.png'.format(n_cut, sigma), dpi=900)
 # %%

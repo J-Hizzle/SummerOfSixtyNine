@@ -48,7 +48,5 @@ for sigma in sigma_vals[1:]:
 
     if sigma == sigma_vals.max():
         plt.legend()
-        plt.savefig(fname='../data/ewald_sum_sigma.pdf', dpi=900)
+        plt.savefig(fname='../data/ewald_sum_sigma.png', dpi=900)
 # %%
-
-    # %%

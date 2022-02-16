@@ -17,17 +17,17 @@ outval      = ['E', 'M']       # calculate E and M
 technique   = 'ES'      # use direct sum method
 
 # specify structure parameters formula, oxidation_states, crystal_type, cell_parameters
-formula             = 'NaCl'
+formula             = 'CsCl'
 atomic_numbers      = [11, 17]
 oxidation_states    = [1, -1]
-crystal_type        = 'NaCl'
-cell_parameters     = [5.64e-10, 4]
+crystal_type        = 'CsCl'
+cell_parameters     = [4.119e-10, 8]
 
 # instantiate structure class
 structure = Structure(formula, atomic_numbers, oxidation_states, crystal_type, cell_parameters)
 # %%
 # set file to write generated data to
-csvfile = '../data/ewald_sum_results_newmad.csv'
+csvfile = '../data/ewald_sum_CsCl_results.csv'
 # %%
 if writenewfile == True:
     # open the file in the write mode
@@ -38,13 +38,13 @@ if writenewfile == True:
     writer.writerow(['n_cut', 'k_cut', 'sigma', 'energy', 'madelung', 'time', 'memory'])
     f.close()# make array of energies depending on cutoff values
 # %%
-n_cut_vals = np.arange(0, 10)
-k_cut_vals = np.arange(0, 10)
+n_cut_vals = np.arange(0, 5)
+k_cut_vals = np.arange(0, 5)
 eta = 8 * 1/np.sqrt(2) * 1/(structure.volume**2)**(1/3) * np.pi
 #sig = 1/eta
 #sig = 1e-10
 #print(sig)
-sigma_vals = [5e-11]
+sigma_vals = [1e-10]
 # %%
 energies = []
 timings = []

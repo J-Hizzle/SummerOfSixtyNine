@@ -63,7 +63,7 @@ class Structure:
         # get coordinates from build_unit_cell function
         self.particles, self.nuclei, \
             self.charges, self.coordinates, \
-                self.N_part, self.volume \
+                self.N_part, self.volume, self.min_dist \
                         = self._build_unit_cell()
             
     def _build_unit_cell(self):
@@ -72,11 +72,14 @@ class Structure:
         For now, only implemented for NaCl type crystals.
         '''
         if self.crystal_type == 'NaCl':
-            particles, nuclei, charges, coordinates, N_part, volume = self._build_NaCl() 
+            particles, nuclei, charges, coordinates, N_part, volume, min_dist = self._build_NaCl() 
         
-        else: print('Cell types other than NaCl not yet implemented')
+        elif self.crystal_type == 'CsCl':
+            particles, nuclei, charges, coordinates, N_part, volume, min_dist = self._build_CsCl() 
+        
+        else: print('Cell types other than NaCl and CsCl not yet implemented')
 
-        return particles, nuclei, charges, coordinates, N_part, volume
+        return particles, nuclei, charges, coordinates, N_part, volume, min_dist
 
     def _build_NaCl(self):
         '''
@@ -87,12 +90,11 @@ class Structure:
         '''        
         coordinates = []
 
-        if self.crystal_type == 'NaCl':
-            # append list of non-reduntant coordinates for sodium ions
-            coordinates.append([[0, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5]])
+        # append list of non-reduntant coordinates for sodium ions
+        coordinates.append([[0, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5]])
 
-            # append list of non-redundant coordinates for chloride ions
-            coordinates.append([[0.5, 0, 0], [0, 0.5, 0], [0, 0, 0.5], [0.5, 0.5, 0.5]])
+        # append list of non-redundant coordinates for chloride ions
+        coordinates.append([[0.5, 0, 0], [0, 0.5, 0], [0, 0, 0.5], [0.5, 0.5, 0.5]])
 
         # set up lists with particle names, atomic numbers, charges
         particles = []
@@ -114,7 +116,45 @@ class Structure:
         # determine unit cell volume
         volume = self.cell_length**3
 
-        return particles, nuclei, charges, coordinates, N_part, volume
+        min_dist = 0.5
+
+        return particles, nuclei, charges, coordinates, N_part, volume, min_dist
+
+    def _build_CsCl(self):
+        coordinates = []
+
+        # append list of non-reduntant coordinates for sodium ions
+        coordinates.append([[0, 0, 0], [0.5, 0, 0], [0, 0.5, 0], [0.5, 0.5, 0], \
+                            [0, 0, 0.5], [0.5, 0, 0.5], [0, 0.5, 0.5], [0.5, 0.5, 0.5]])
+
+        # append list of non-redundant coordinates for chloride ions
+        coordinates.append([[0.25, 0.25, 0.25], [0.75, 0.25, 0.25], [0.25, 0.75, 0.25], [0.75, 0.75, 0.25],\
+                            [0.25, 0.25, 0.75], [0.75, 0.25, 0.75], [0.25, 0.75, 0.75], [0.75, 0.75, 0.75]])
+
+        # set up lists with particle names, atomic numbers, charges
+        particles = []
+        nuclei = []
+        charges = []
+        
+        for i in range(len(coordinates)):
+            for j in range(len(coordinates[i])):
+                particles.append(self.species[i])
+                nuclei.append(self.atomic_numbers[i])
+                charges.append(self.oxidation_states[i])
+
+        # flatten coordinate list and scale according to unit_cell length
+        coordinates = [np.asarray(coord_vec) * self.cell_length for spec_list in coordinates for coord_vec in spec_list]
+
+        # determine number of particles in the unit cell
+        N_part = len(coordinates)
+
+        # determine unit cell volume
+        volume = self.cell_length**3
+
+        min_dist = np.linalg.norm([0.25, 0.25, 0.25])
+
+        return particles, nuclei, charges, coordinates, N_part, volume, min_dist
+
 
     def get_rep(self, cutoff):
         '''
